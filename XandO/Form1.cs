@@ -22,6 +22,8 @@ namespace XandO
 
     public partial class Window : Form
     {
+
+        private bool OngoingGame;
         /// <summary>
         /// A more efficient way to connect to the label at each cell.
         /// </summary>
@@ -72,19 +74,20 @@ namespace XandO
 
         private void ClickReaction(Label label)
         {
-            if (HasEmpty(label))
+            if (OngoingGame && HasEmpty(label))
             {
                 // Implement player's click.
                 PlayerMove(label, labelOption);
 
                 // Implement Cpu choice.
-                try { PlayerMove(RandomRemainingLabel(), cpuOption); }
-                catch (DivideByZeroException) { EndGame(cpuOption); }
+                //try { PlayerMove(RandomRemainingLabel(), cpuOption); }
+                //catch (DivideByZeroException) { EndGame(cpuOption); }
             }
         }
 
         private void ResetGame()
         {
+            OngoingGame = true;
             ResetLabel.Text = "";
 
             remainingCells = new HashSet<Label>
@@ -116,6 +119,7 @@ namespace XandO
 
         private void PlayerMove(Label label, string text)
         {
+            // Update all private fields on click.
             label.Text = text;
             remainingCells.Remove(label); usedCells.Add(label);
             var cell = GameTable.GetCellPosition(label);
@@ -128,19 +132,23 @@ namespace XandO
         {
             if (text == labelOption) { ResetLabel.Text = "You Win!"; }
             else { ResetLabel.Text = "You Lose."; }
+
+            OngoingGame = false;
         }
 
         /// <summary>
         /// Returns a random remaining label on the game table.
         /// </summary>
         /// <returns></returns>
-        private Label RandomRemainingLabel() => remainingCells.ToArray()[new Random().Next() % (remainingCells.Count)];
+        private Label RandomRemainingLabel() => 
+            remainingCells.ToArray()[new Random().Next() % (remainingCells.Count)];
 
         private bool GameOver(Label label)
         {
             if (remainingCells.Count == 0) { return true; }
-            
             var cell = GameTable.GetCellPosition(label);
+            ResetLabel.Text = String.Format("{0}, {1}\n{2}", cell.Row % 2, cell.Column % 2, IsCorner(cell.Row, cell.Column));
+
             // Corner cell case.
             if (IsCorner(cell.Row, cell.Column)) { return CornerCase(cell); }
             // Edge non-corner cell case.
@@ -183,7 +191,10 @@ namespace XandO
             return false;
         }
 
-        private bool IsEdge(int row, int column) => ((row % 2) * (column % 2)) == 0;
+        private bool IsEdge(int row, int column)
+        {
+            return ((row % 2) * (column % 2)) == 0;
+        }
 
         private bool EdgeCase(TableLayoutPanelCellPosition cell)
         {
